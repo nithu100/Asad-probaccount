@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AssetPro | Premium Marketplace</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+    <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            /* --- Restored White & Blue Palette --- */
+            --blue: #007AFF;
+            --blue-dark: #0056b3;
+            --accent: #E3F2FD;
+            --bg-page: #F4F7F9;
+            --bg-card: #FFFFFF;
+            --glass: rgba(0, 122, 255, 0.05);
+            --border: rgba(0, 0, 0, 0.08);
+            --text-main: #1D1D1F;
+            --text-gray: #86868b;
+            --neon-glow: 0 0 20px rgba(0, 122, 255, 0.2);
+        }
+
+        /* Base Reset */
+        * { box-sizing: border-box; margin: 0; padding: 0; outline: none; }
+        body { 
+            background: var(--bg-page); 
+            color: var(--text-main); 
+            font-family: 'Outfit', sans-serif; 
+            overflow-x: hidden;
+            line-height: 1.5;
+        }
+
+        /* --- Custom Scrollbar --- */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-page); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--blue); }
+
+        /* --- Header & Navigation --- */
+        header {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+            padding: 18px 6%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        .brand { font-size: 1.8rem; font-weight: 800; color: var(--blue); letter-spacing: -1px; }
+        .brand span { color: var(--text-main); font-weight: 300; }
+        
+        .user-icon { 
+            width: 45px; height: 45px; border-radius: 12px; 
+            background: var(--accent); display: flex; align-items: center; 
+            justify-content: center; cursor: pointer; border: 1px solid var(--blue);
+            color: var(--blue); transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            font-weight: 800; overflow: hidden;
+        }
+        .user-icon:hover { 
+            background: var(--blue); 
+            color: #fff;
+            transform: scale(1.05); 
+        }
+
+        /* --- Dynamic Banner Slider (16:9) --- */
+        .hero-slider {
+            width: 92%;
+            max-width: 1200px;
+            margin: 30px auto;
+            aspect-ratio: 16/9;
+            position: relative;
+            overflow: hidden;
+            border-radius: 24px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.05);
+            border: 1px solid var(--border);
+        }
+        .slider-engine {
+            display: flex;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.8s cubic-bezier(0.7, 0, 0.3, 1);
+        }
+        .slide { min-width: 100%; height: 100%; position: relative; }
+        .slide::after {
+            content: ''; position: absolute; bottom: 0; left: 0; width: 100%;
+            height: 40%; background: linear-gradient(to top, rgba(0,0,0,0.3), transparent);
+        }
+        .slide img { width: 100%; height: 100%; object-fit: cover; }
+        
+        .slider-controls {
+            position: absolute; bottom: 25px; left: 50%;
+            transform: translateX(-50%); display: flex; gap: 12px; z-index: 10;
+        }
+        .dot {
+            width: 10px; height: 10px; background: rgba(0,0,0,0.1);
+            border-radius: 50%; cursor: pointer; transition: 0.4s;
+        }
+        .dot.active { background: var(--blue); width: 35px; border-radius: 12px; box-shadow: var(--neon-glow); }
+
+        /* --- Product Grid System --- */
+        .section-title { width: 90%; max-width: 1200px; margin: 50px auto 30px; display: flex; align-items: center; gap: 20px; }
+        .section-title h2 { font-size: 1.6rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: var(--text-main); }
+        .section-title .line { flex: 1; height: 2px; background: linear-gradient(to right, var(--border), transparent); }
+
+        .container { width: 92%; max-width: 1200px; margin: 0 auto 100px; }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 30px;
+        }
+
+        /* --- Professional Asset Cards --- */
+        .card {
+            background: var(--bg-card);
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+            transition: 0.5s cubic-bezier(0.165, 0.84, 0.44, 1);
+            position: relative;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+        }
+        .card:hover {
+            transform: translateY(-12px);
+            border-color: var(--blue);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+        }
+        .card-img { width: 100%; aspect-ratio: 16/9; position: relative; background: #eee; overflow: hidden; }
+        .card-img img { width: 100%; height: 100%; object-fit: cover; transition: 0.6s; }
+        .card:hover .card-img img { transform: scale(1.1); }
+        
+        .tag {
+            position: absolute; top: 15px; right: 15px; 
+            background: var(--blue); color: #fff; font-size: 0.7rem; padding: 5px 12px;
+            border-radius: 6px; font-weight: 800; text-transform: uppercase;
+            box-shadow: var(--neon-glow); z-index: 2;
+        }
+        .card-body { padding: 25px; }
+        .card-body h3 { font-size: 1.15rem; font-weight: 600; margin-bottom: 15px; color: var(--text-main); }
+        
+        .card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; }
+        .price-box { color: var(--blue); font-size: 1.6rem; font-weight: 800; }
+        .price-box span { font-size: 1rem; margin-right: 3px; opacity: 0.8; }
+        
+        .buy-now {
+            background: var(--text-main); color: #fff; border: none; padding: 12px 22px;
+            border-radius: 10px; font-weight: 800; cursor: pointer; transition: 0.3s;
+            text-transform: uppercase; font-size: 0.85rem;
+        }
+        .buy-now:hover { background: var(--blue); transform: scale(1.05); }
+
+        /* --- Modals --- */
+        .overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.9); z-index: 2000; align-items: center; justify-content: center;
+            backdrop-filter: blur(12px);
+        }
+        .modal-box {
+            background: #fff; padding: 40px; border-radius: 28px; width: 90%;
+            max-width: 420px; border: 1px solid var(--border); text-align: center;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.1);
+        }
+        .modal-box h2 { color: var(--blue); margin-bottom: 30px; font-size: 2rem; font-weight: 800; }
+        .modal-box input {
+            width: 100%; padding: 16px; margin-bottom: 18px; background: #f9f9f9;
+            border: 1px solid #eee; border-radius: 12px; color: #000; font-size: 1rem;
+        }
+        .modal-box input:focus { border-color: var(--blue); background: #fff; }
+        
+        .action-btn {
+            width: 100%; padding: 16px; background: var(--blue); color: #fff; border: none;
+            border-radius: 12px; font-weight: 800; cursor: pointer; margin-top: 10px;
+            transition: 0.3s; font-size: 1rem;
+        }
+        .action-btn:hover { background: var(--blue-dark); transform: translateY(-2px); }
+
+        /* --- Sidebar Profile --- */
+        .side-menu {
+            position: fixed; top: 0; right: -400px; width: 400px; height: 100%;
+            background: #fff; z-index: 3000; transition: 0.6s cubic-bezier(0.85, 0, 0.15, 1);
+            padding: 70px 40px; border-left: 1px solid var(--border); box-shadow: -10px 0 30px rgba(0,0,0,0.05);
+        }
+        .side-menu.active { right: 0; }
+        .close-menu { position: absolute; top: 30px; left: 30px; cursor: pointer; font-size: 1.8rem; color: #ccc; transition: 0.3s; }
+        .close-menu:hover { color: var(--blue); }
+        
+        .user-meta { text-align: center; margin-bottom: 60px; }
+        .profile-avatar { 
+            width: 90px; height: 90px; border-radius: 50%; background: var(--accent);
+            border: 2px solid var(--blue); margin: 0 auto 20px; display: flex;
+            align-items: center; justify-content: center; font-size: 2.5rem; color: var(--blue); font-weight: 800;
+        }
+        .menu-link {
+            padding: 20px; border-radius: 16px; margin-bottom: 15px;
+            display: flex; align-items: center; gap: 18px; cursor: pointer;
+            color: var(--text-gray); transition: 0.3s; background: #fdfdfd;
+            border: 1px solid #f5f5f5;
+        }
+        .menu-link:hover { background: var(--accent); color: var(--blue); border-color: var(--blue); }
+
+        #mainLoader { position: fixed; top:0; left:0; width:100%; height:100%; background:#fff; z-index:9999; display:flex; align-items:center; justify-content:center; flex-direction: column; gap: 20px;}
+        .loading-text { color: var(--blue); font-weight: 800; letter-spacing: 4px; font-size: 0.8rem; text-transform: uppercase; }
+    </style>
+</head>
+<body>
+
+<div id="mainLoader">
+    <i class="fas fa-circle-notch fa-spin fa-3x" style="color:var(--blue)"></i>
+    <div class="loading-text">Synchronizing</div>
+</div>
+
+<header>
+    <div class="brand">ASSET<span>PRO</span></div>
+    <div class="nav-actions">
+        <div class="user-icon" id="navIcon" onclick="toggleMenu()"><i class="fas fa-user"></i></div>
+    </div>
+</header>
+
+<div class="hero-slider">
+    <div class="slider-engine" id="sliderEngine"></div>
+    <div class="slider-controls" id="sliderDots"></div>
+</div>
+
+<div class="section-title">
+    <h2>Premium Assets</h2>
+    <div class="line"></div>
+</div>
+
+<div class="container">
+    <div class="grid" id="productGrid"></div>
+</div>
+
+<div class="overlay" id="authModal">
+    <div class="modal-box">
+        <h2 id="modalTitle">Access Core</h2>
+        <div id="regExtra" style="display:none"><input type="text" id="regName" placeholder="Operator Name"></div>
+        <input type="email" id="authEmail" placeholder="Secure Email">
+        <input type="password" id="authPass" placeholder="Access Key">
+        <div id="regConfirm" style="display:none"><input type="password" id="authConfirm" placeholder="Confirm Access Key"></div>
+        <button class="action-btn" onclick="handleAuth()">AUTHORIZE</button>
+        <p id="switchTxt" onclick="toggleAuth()" style="margin-top:25px; font-size:0.85rem; color:var(--text-gray); cursor:pointer">New Entity? Create ID</p>
+        <p onclick="closeAuth()" style="margin-top:15px; color:var(--blue); cursor:pointer; font-size:0.8rem; font-weight: 600;">ABORT MISSION</p>
+    </div>
+</div>
+
+<div class="overlay" id="policyModal">
+    <div class="modal-box" style="max-width: 600px; text-align: left;">
+        <h2 id="policyTitle" style="font-size:1.5rem; color: var(--blue);"></h2>
+        <div id="policyContent" style="margin:25px 0; color:var(--text-gray); font-size:0.95rem; line-height:1.8; max-height:400px; overflow-y:auto;"></div>
+        <button class="action-btn" onclick="closePolicy()">ACKNOWLEDGED</button>
+    </div>
+</div>
+
+<div class="side-menu" id="sideMenu">
+    <i class="fas fa-xmark close-menu" onclick="toggleMenu()"></i>
+    <div class="user-meta">
+        <div id="sideAvatar" class="profile-avatar">?</div>
+        <h3 id="displayUsername">Initializing...</h3>
+        <p id="displayEmail" style="color:var(--text-gray); font-size:0.85rem; margin-top:8px"></p>
+    </div>
+    <div class="menu-link" onclick="fetchPolicy('Terms & Conditions')"><i class="fas fa-file-contract"></i> Protocol: Terms</div>
+    <div class="menu-link" onclick="fetchPolicy('Privacy Policy')"><i class="fas fa-user-shield"></i> Protocol: Privacy</div>
+    <div class="menu-link" onclick="fetchPolicy('Payment Condition')"><i class="fas fa-credit-card"></i> Protocol: Payments</div>
+    <div class="menu-link" style="margin-top:40px; color:var(--blue); background: var(--accent);" onclick="logOut()">
+        <i class="fas fa-power-off"></i> Terminate Session
+    </div>
+</div>
+
+<script>
+// --- NO CHANGES IN CODING LOGIC ---
+const RENDER_URL = "https://asad-probaccount.onrender.com";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyDx4Op4Z93ut30pIfnmSqW8EB4yrb772XA",
+    authDomain: "tiger-8249f.firebaseapp.com",
+    databaseURL: "https://tiger-8249f-default-rtdb.firebaseio.com",
+    projectId: "tiger-8249f",
+    storageBucket: "tiger-8249f.firebasestorage.app",
+    appId: "1:1008257292905:web:909e2557b73c89f4ee60f8"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.database();
+
+let isLogin = true;
+let activeUser = null;
+let currentSlide = 0;
+let slideCount = 0;
+
+auth.onAuthStateChanged(user => {
+    activeUser = user;
+    document.getElementById('mainLoader').style.display = 'none';
+    if(user) {
+        document.getElementById('displayEmail').innerText = user.email;
+        db.ref('users/' + user.uid).once('value', s => {
+            const name = s.val()?.username || "Agent";
+            document.getElementById('displayUsername').innerText = name;
+            const initial = name.charAt(0).toUpperCase();
+            document.getElementById('navIcon').innerText = initial;
+            document.getElementById('sideAvatar').innerText = initial;
+        });
+    } else {
+        document.getElementById('displayUsername').innerText = "Guest Entity";
+        document.getElementById('displayEmail').innerText = "Authorization Required";
+        document.getElementById('navIcon').innerHTML = `<i class="fas fa-user"></i>`;
+        document.getElementById('sideAvatar').innerText = "?";
+    }
+});
+
+function toggleAuth() {
+    isLogin = !isLogin;
+    document.getElementById('modalTitle').innerText = isLogin ? "Access Core" : "Initialize ID";
+    document.getElementById('regExtra').style.display = isLogin ? "none" : "block";
+    document.getElementById('regConfirm').style.display = isLogin ? "none" : "block";
+    document.getElementById('switchTxt').innerText = isLogin ? "New Entity? Create ID" : "ID Detected? Access Core";
+}
+
+async function handleAuth() {
+    const email = document.getElementById('authEmail').value;
+    const pass = document.getElementById('authPass').value;
+    if(!email || !pass) return alert("All fields required!");
+    try {
+        if(isLogin) { await auth.signInWithEmailAndPassword(email, pass); } 
+        else {
+            const name = document.getElementById('regName').value;
+            const res = await auth.createUserWithEmailAndPassword(email, pass);
+            await db.ref('users/' + res.user.uid).set({ username: name, email: email, joined: Date.now() });
+        }
+        closeAuth();
+    } catch(e) { alert(e.message); }
+}
+
+db.ref('banners').on('value', snap => {
+    const engine = document.getElementById('sliderEngine');
+    const dots = document.getElementById('sliderDots');
+    engine.innerHTML = ""; dots.innerHTML = "";
+    let i = 0;
+    snap.forEach(child => {
+        if(i < 5) {
+            engine.innerHTML += `<div class="slide"><img src="${child.val().img}"></div>`;
+            dots.innerHTML += `<div class="dot ${i===0?'active':''}" onclick="goToSlide(${i})"></div>`;
+            i++;
+        }
+    });
+    slideCount = i;
+    if(i > 0) setInterval(() => { currentSlide = (currentSlide + 1) % slideCount; syncSlider(); }, 6000);
+});
+
+function syncSlider() {
+    document.getElementById('sliderEngine').style.transform = `translateX(-${currentSlide * 100}%)`;
+    document.querySelectorAll('.dot').forEach((d, idx) => d.classList.toggle('active', idx === currentSlide));
+}
+
+function goToSlide(n) { currentSlide = n; syncSlider(); }
+
+db.ref('products').on('value', snap => {
+    const grid = document.getElementById('productGrid');
+    grid.innerHTML = "";
+    snap.forEach(c => {
+        const item = c.val();
+        grid.innerHTML += `
+            <div class="card">
+                <div class="card-img"><img src="${item.img}"></div>
+                <div class="card-body">
+                    <h3>${item.title}</h3>
+                    <div class="card-footer">
+                        <div class="price-box"><span>₹</span>${item.amount}</div>
+                        <button class="buy-now" onclick="initiatePurchase('${c.key}', ${item.amount})">Get Asset</button>
+                    </div>
+                </div>
+            </div>`;
+    });
+});
+
+async function initiatePurchase(id, amt) {
+    if(!activeUser) return document.getElementById('authModal').style.display = 'flex';
+    try {
+        const res = await fetch(`${RENDER_URL}/create-order`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ amount: amt, itemId: id, customerEmail: activeUser.email })
+        });
+        const orderData = await res.json();
+        if(orderData.payment_session_id) {
+            Cashfree({ mode: "sandbox" }).checkout({ paymentSessionId: orderData.payment_session_id, redirectTarget: "_self" });
+        }
+    } catch (err) { alert("Connectivity Error"); }
+}
+
+function fetchPolicy(type) {
+    const modal = document.getElementById('policyModal');
+    document.getElementById('policyTitle').innerText = type;
+    modal.style.display = 'flex';
+    let key = type === 'Privacy Policy' ? 'privacy' : (type === 'Payment Condition' ? 'payment' : 'terms');
+    db.ref('policies/' + key).once('value', s => { document.getElementById('policyContent').innerText = s.val() || "No data."; });
+}
+
+function toggleMenu() { document.getElementById('sideMenu').classList.toggle('active'); }
+function closeAuth() { document.getElementById('authModal').style.display = 'none'; }
+function closePolicy() { document.getElementById('policyModal').style.display = 'none'; }
+function logOut() { auth.signOut(); location.reload(); }
+</script>
+</body>
+</html>
